@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="BodyLog">
+<meta name="theme-color" content="#2ec4a5">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<title>BodyLog</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root {
+  --lime:#b8e04a; --lime-dark:#7aab1e; --lime-pale:#eef7d0;
+  --teal:#2ec4a5; --teal-dark:#1a8f78; --teal-pale:#d0f5ee;
+  --sky:#5ab4e8; --sky-dark:#2a86c0; --sky-pale:#d6eef9;
+  --yellow:#f4d03f; --yellow-dark:#b8960c; --yellow-pale:#fdf8d6;
+  --ink:#1a2015; --ink-mid:#3a4535; --ink-soft:#6b7a60;
+  --surface:#f7faf0; --surface-2:#edf3df; --white:#ffffff;
+  --border:#d0e3a8; --radius:16px; --radius-sm:8px;
+  --shadow:0 2px 12px rgba(26,32,21,.07); --shadow-md:0 4px 24px rgba(26,32,21,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Syne',sans-serif;background:var(--surface);color:var(--ink);min-height:100vh;}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:100;background:rgba(247,250,240,.93);backdrop-filter:blur(14px);border-bottom:1.5px solid var(--border);display:flex;align-items:center;padding:0 20px;height:54px;gap:0;}
+.nav-logo{font-family:'Instrument Serif',serif;font-size:20px;margin-right:auto;letter-spacing:-.02em;}
+.nav-logo span{color:var(--teal);}
+.nav-tabs{display:flex;gap:2px;}
+.nav-tab{padding:6px 13px;border-radius:20px;font-size:13px;font-weight:500;color:var(--ink-soft);cursor:pointer;border:none;background:none;transition:all .2s;white-space:nowrap;font-family:'Syne',sans-serif;}
+.nav-tab:hover{color:var(--ink);background:var(--surface-2);}
+.nav-tab.active{background:var(--ink);color:var(--white);}
+
+/* PAGES */
+.page{display:none;padding:24px 20px;max-width:760px;margin:0 auto;}
+.page.active{display:block;}
+
+/* SETUP BANNER */
+.setup-banner{background:var(--yellow-pale);border:1.5px solid var(--yellow-dark);border-radius:var(--radius);padding:16px 18px;margin-bottom:20px;}
+.setup-banner h3{font-size:14px;font-weight:600;color:var(--yellow-dark);margin-bottom:8px;}
+.setup-banner p{font-size:12px;color:var(--ink-mid);line-height:1.6;margin-bottom:10px;}
+.setup-inputs{display:flex;flex-direction:column;gap:8px;}
+.setup-inputs input{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;font-family:'DM Mono',monospace;font-size:12px;color:var(--ink);outline:none;width:100%;}
+.setup-inputs input:focus{border-color:var(--teal);}
+.setup-save-btn{margin-top:8px;padding:9px 18px;background:var(--teal);color:white;border:none;border-radius:var(--radius-sm);font-family:'Syne',sans-serif;font-size:13px;font-weight:600;cursor:pointer;}
+.sync-status{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-soft);margin-bottom:16px;}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--border);}
+.sync-dot.connected{background:var(--teal);}
+.sync-dot.syncing{background:var(--yellow);animation:pulse 1s infinite;}
+.sync-dot.error{background:#e74c3c;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* DATE BAR */
+.date-bar{display:flex;align-items:center;justify-content:space-between;background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);padding:13px 18px;margin-bottom:20px;box-shadow:var(--shadow);}
+.date-label{font-family:'DM Mono',monospace;font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em;}
+.date-main{font-size:19px;font-weight:700;letter-spacing:-.02em;margin-top:2px;}
+.date-nav{display:flex;gap:8px;}
+.date-btn{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--ink-mid);transition:all .15s;}
+.date-btn:hover{background:var(--lime);border-color:var(--lime-dark);}
+
+/* SECTION TITLE */
+.stitle{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:10px;margin-top:24px;display:flex;align-items:center;gap:8px;}
+.stitle::after{content:'';flex:1;height:1px;background:var(--border);}
+.stitle:first-child{margin-top:0;}
+
+/* CARD */
+.card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-bottom:14px;}
+
+/* PROGRESS RING */
+.prog-row{display:grid;grid-template-columns:80px 1fr;gap:18px;align-items:center;margin-bottom:22px;}
+.ring-wrap{position:relative;width:80px;height:80px;}
+.ring-wrap svg{transform:rotate(-90deg);}
+.ring-bg{fill:none;stroke:var(--surface-2);stroke-width:8;}
+.ring-fill{fill:none;stroke:var(--teal);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset .5s ease;}
+.ring-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.ring-pct{font-size:18px;font-weight:700;line-height:1;}
+.ring-lbl{font-size:10px;color:var(--ink-soft);margin-top:2px;}
+.prog-info .prog-title{font-size:15px;font-weight:600;margin-bottom:3px;}
+.prog-info .prog-sub{font-size:12px;color:var(--ink-soft);line-height:1.5;}
+.streak-pill{display:inline-flex;align-items:center;gap:4px;background:var(--yellow-pale);border:1px solid var(--yellow-dark);border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600;color:var(--yellow-dark);margin-top:8px;}
+
+/* CHECKLIST */
+.check-item{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid var(--surface-2);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent;}
+.check-item:last-child{border-bottom:none;padding-bottom:0;}
+.check-item:first-child{padding-top:0;}
+.chk-box{width:22px;height:22px;flex-shrink:0;border:2px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:all .2s;background:var(--surface);}
+.check-item.checked .chk-box{background:var(--teal);border-color:var(--teal-dark);}
+.check-item.checked .chk-box::after{content:'✓';font-size:13px;color:white;font-weight:700;}
+.chk-text{flex:1;}
+.chk-label{font-size:14px;font-weight:500;line-height:1.4;transition:color .15s;}
+.check-item.checked .chk-label{color:var(--ink-soft);text-decoration:line-through;}
+.chk-sub{font-size:12px;color:var(--ink-soft);margin-top:2px;line-height:1.5;}
+
+/* MEAL + FULLNESS */
+.meal-grid{display:grid;gap:10px;}
+.meal-row{display:grid;grid-template-columns:90px 1fr;gap:10px;align-items:center;}
+.meal-lbl{font-size:12px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;}
+input[type="time"],input[type="number"],input[type="text"],textarea,select{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:8px 11px;font-family:'DM Mono',monospace;font-size:13px;color:var(--ink);outline:none;width:100%;transition:border-color .15s;}
+input:focus,textarea:focus{border-color:var(--teal);}
+input[type="time"]{width:130px;}
+.fullness-block{margin-bottom:16px;}
+.fullness-block:last-child{margin-bottom:0;}
+.fullness-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.fullness-name{font-size:13px;font-weight:600;}
+.fullness-val{font-family:'DM Mono',monospace;font-size:20px;font-weight:500;color:var(--teal-dark);}
+input[type="range"]{-webkit-appearance:none;width:100%;height:6px;border-radius:99px;outline:none;padding:0;border:none;cursor:pointer;background:linear-gradient(to right,var(--teal) 50%,var(--surface-2) 50%);}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--white);border:2px solid var(--teal);box-shadow:0 1px 4px rgba(0,0,0,.15);cursor:pointer;}
+.pip-row{display:flex;gap:4px;margin-top:7px;}
+.pip{width:20px;height:20px;border-radius:4px;background:var(--surface-2);border:1px solid var(--border);transition:background .2s,border-color .2s;}
+
+/* CONDITION */
+.cond-grid{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;}
+.cond-btn{padding:7px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);font-family:'Syne',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;color:var(--ink-mid);}
+.cond-btn:hover{border-color:var(--teal);}
+.cond-btn.selected{background:var(--teal);border-color:var(--teal-dark);color:white;}
+
+/* WEIGHT INPUT */
+.wt-row{display:flex;align-items:center;gap:10px;}
+.wt-row input{width:120px;font-size:22px;text-align:center;font-weight:600;}
+.wt-unit{font-size:14px;color:var(--ink-soft);}
+
+/* NOTES */
+textarea{resize:vertical;min-height:68px;font-size:13px;}
+
+/* SAVE BTN */
+.save-btn{width:100%;padding:14px;border-radius:var(--radius);background:var(--teal);border:none;color:white;font-family:'Syne',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;margin-top:6px;letter-spacing:.02em;}
+.save-btn:hover{background:var(--teal-dark);transform:translateY(-1px);box-shadow:var(--shadow-md);}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:white;padding:12px 24px;border-radius:20px;font-size:14px;font-weight:500;transition:transform .3s ease;z-index:999;box-shadow:var(--shadow-md);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+
+/* WEIGHT PAGE */
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+.stat-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center;box-shadow:var(--shadow);}
+.stat-card.hl{background:var(--teal-pale);border-color:var(--teal);}
+.stat-val{font-size:21px;font-weight:700;font-family:'DM Mono',monospace;}
+.stat-lbl{font-size:11px;color:var(--ink-soft);margin-top:3px;text-transform:uppercase;letter-spacing:.05em;}
+.chart-wrap{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-bottom:14px;}
+canvas{width:100%!important;}
+.w-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--surface-2);font-size:14px;}
+.w-row:last-child{border-bottom:none;}
+.w-date{color:var(--ink-soft);font-family:'DM Mono',monospace;font-size:12px;}
+.w-val{font-weight:600;font-family:'DM Mono',monospace;}
+.w-delta{font-size:12px;font-family:'DM Mono',monospace;}
+.dn{color:var(--teal-dark);}
+.up{color:#c0392b;}
+
+/* STATS PAGE */
+.heatmap-wrap{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;}
+.hm-cell{width:26px;height:26px;border-radius:5px;background:var(--surface-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--ink-soft);cursor:default;transition:transform .15s;position:relative;}
+.hm-cell:hover{transform:scale(1.2);z-index:2;}
+.hm-cell.h1{background:var(--teal-pale);border-color:var(--teal);}
+.hm-cell.h2{background:var(--teal);border-color:var(--teal-dark);color:white;}
+.hm-cell.h3{background:var(--teal-dark);border-color:#0a4a3a;color:white;}
+.habit-bar-wrap{margin-bottom:14px;}
+.habit-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.habit-bar-name{font-size:12px;font-weight:500;flex:0 0 180px;line-height:1.3;color:var(--ink-mid);}
+.habit-bar-track{flex:1;height:10px;background:var(--surface-2);border-radius:99px;overflow:hidden;}
+.habit-bar-fill{height:100%;background:var(--teal);border-radius:99px;transition:width .6s ease;}
+.habit-bar-pct{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;color:var(--teal-dark);flex:0 0 36px;text-align:right;}
+
+/* ANALYSIS */
+.analyze-btn{width:100%;padding:14px;border-radius:var(--radius);background:linear-gradient(135deg,var(--teal) 0%,var(--sky) 100%);border:none;color:white;font-family:'Syne',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;margin-bottom:18px;box-shadow:var(--shadow-md);}
+.analyze-btn:hover{opacity:.9;transform:translateY(-1px);}
+.insight-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:12px;box-shadow:var(--shadow);}
+.insight-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.insight-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.insight-title{font-size:14px;font-weight:600;}
+.insight-body{font-size:13px;color:var(--ink-mid);line-height:1.7;}
+.im{display:inline-block;background:var(--lime-pale);color:var(--lime-dark);border-radius:var(--radius-sm);padding:1px 7px;font-family:'DM Mono',monospace;font-size:12px;font-weight:500;margin:0 2px;}
+.no-data{text-align:center;padding:36px 20px;color:var(--ink-soft);}
+.no-data .nd-icon{font-size:34px;margin-bottom:10px;}
+.no-data .nd-text{font-size:13px;line-height:1.6;}
+.dots{display:flex;gap:6px;justify-content:center;padding:24px;}
+.dots span{width:8px;height:8px;border-radius:50%;background:var(--teal);animation:bounce 1.2s infinite;}
+.dots span:nth-child(2){animation-delay:.2s;}
+.dots span:nth-child(3){animation-delay:.4s;}
+@keyframes bounce{0%,80%,100%{transform:scale(.8);opacity:.5}40%{transform:scale(1.2);opacity:1}}
+
+@media(max-width:560px){
+  .stat-grid{grid-template-columns:1fr 1fr;}
+  .habit-bar-name{flex:0 0 130px;font-size:11px;}
+  nav{padding:0 12px;}
+  .nav-tab{padding:5px 9px;font-size:12px;}
+  .page{padding:18px 14px;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">body<span>log</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('today',this)">Today</button>
+    <button class="nav-tab" onclick="showPage('weight',this)">Weight</button>
+    <button class="nav-tab" onclick="showPage('stats',this)">Stats</button>
+    <button class="nav-tab" onclick="showPage('analysis',this)">Analysis</button>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════ TODAY ══ -->
+<div class="page active" id="page-today">
+
+  <!-- SUPABASE SETUP -->
+  <div class="setup-banner" id="setup-banner">
+    <h3>⚙️ One-time cloud sync setup</h3>
+    <p>To sync across all your devices, enter your Supabase credentials below. This only needs to be done once per device. <a href="#" onclick="showSetupHelp();return false;" style="color:var(--teal-dark);">How to get these →</a></p>
+    <div class="setup-inputs">
+      <input type="text" id="sb-url" placeholder="Supabase Project URL  (https://xxxx.supabase.co)" autocomplete="off" spellcheck="false">
+      <input type="text" id="sb-key" placeholder="Supabase anon key  (eyJh...)" autocomplete="off" spellcheck="false">
+      <input type="text" id="user-id" placeholder="Your name or ID  (e.g. minjee)" autocomplete="off">
+    </div>
+    <button class="setup-save-btn" onclick="saveSupabaseConfig()">Save & Connect</button>
+  </div>
+
+  <div class="sync-status" id="sync-status" style="display:none">
+    <div class="sync-dot" id="sync-dot"></div>
+    <span id="sync-text">Connecting...</span>
+    <span style="margin-left:auto;cursor:pointer;font-size:11px;color:var(--ink-soft);" onclick="resetConfig()">Reset</span>
+  </div>
+
+  <!-- DATE -->
+  <div class="date-bar">
+    <div>
+      <div class="date-label">Daily Log</div>
+      <div class="date-main" id="display-date"></div>
+    </div>
+    <div class="date-nav">
+      <button class="date-btn" onclick="changeDate(-1)">‹</button>
+      <button class="date-btn" onclick="changeDate(1)">›</button>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="prog-row">
+    <div class="ring-wrap">
+      <svg width="80" height="80" viewBox="0 0 80 80">
+        <circle class="ring-bg" cx="40" cy="40" r="32"/>
+        <circle class="ring-fill" cx="40" cy="40" r="32" id="ring-fill" stroke-dasharray="201" stroke-dashoffset="201"/>
+      </svg>
+      <div class="ring-text">
+        <div class="ring-pct" id="ring-pct">0%</div>
+        <div class="ring-lbl" id="ring-done">0/8</div>
+      </div>
+    </div>
+    <div class="prog-info">
+      <div class="prog-title">Today's Achievement</div>
+      <div class="prog-sub" id="prog-msg">Check off your habits below</div>
+      <div class="streak-pill">🔥 <span id="streak-num">0</span> day streak</div>
+    </div>
+  </div>
+
+  <!-- CHECKLIST -->
+  <div class="stitle">Habits</div>
+  <div class="card" id="checklist-wrap"></div>
+
+  <!-- MORNING CONDITION -->
+  <div class="stitle">Morning Condition</div>
+  <div class="card">
+    <div style="font-size:13px;color:var(--ink-soft);margin-bottom:10px;">How do you feel waking up today?</div>
+    <div class="cond-grid" id="cond-btns">
+      <button class="cond-btn" onclick="selectCond(this,'great')">😄 Great</button>
+      <button class="cond-btn" onclick="selectCond(this,'good')">🙂 Good</button>
+      <button class="cond-btn" onclick="selectCond(this,'okay')">😐 Okay</button>
+      <button class="cond-btn" onclick="selectCond(this,'tired')">😴 Tired</button>
+      <button class="cond-btn" onclick="selectCond(this,'rough')">😞 Rough</button>
+    </div>
+  </div>
+
+  <!-- MEAL TIMES -->
+  <div class="stitle">Meal Times</div>
+  <div class="card">
+    <div class="meal-grid">
+      <div class="meal-row"><div class="meal-lbl">Breakfast</div><input type="time" id="meal-b"></div>
+      <div class="meal-row"><div class="meal-lbl">Lunch</div><input type="time" id="meal-l"></div>
+      <div class="meal-row"><div class="meal-lbl">Dinner</div><input type="time" id="meal-d"></div>
+      <div class="meal-row"><div class="meal-lbl">Snack</div><input type="time" id="meal-s"></div>
+    </div>
+  </div>
+
+  <!-- FULLNESS -->
+  <div class="stitle">Fullness After Meals</div>
+  <div class="card">
+    <div style="font-size:12px;color:var(--ink-soft);margin-bottom:14px;">1 = still hungry &nbsp;·&nbsp; 10 = overstuffed. Aim for 6–7.</div>
+    <div class="fullness-block">
+      <div class="fullness-header"><span class="fullness-name">Breakfast</span><span class="fullness-val" id="fv-b">5</span></div>
+      <input type="range" min="1" max="10" value="5" id="fs-b" oninput="updateFull('b',this.value)">
+      <div class="pip-row" id="pip-b"></div>
+    </div>
+    <div class="fullness-block">
+      <div class="fullness-header"><span class="fullness-name">Lunch</span><span class="fullness-val" id="fv-l">5</span></div>
+      <input type="range" min="1" max="10" value="5" id="fs-l" oninput="updateFull('l',this.value)">
+      <div class="pip-row" id="pip-l"></div>
+    </div>
+    <div class="fullness-block">
+      <div class="fullness-header"><span class="fullness-name">Dinner</span><span class="fullness-val" id="fv-d">5</span></div>
+      <input type="range" min="1" max="10" value="5" id="fs-d" oninput="updateFull('d',this.value)">
+      <div class="pip-row" id="pip-d"></div>
+    </div>
+  </div>
+
+  <!-- WEIGHT -->
+  <div class="stitle">Today's Weight</div>
+  <div class="card">
+    <div class="wt-row">
+      <input type="number" id="today-wt" placeholder="50.0" step="0.1" min="30" max="200">
+      <span class="wt-unit">kg</span>
+    </div>
+  </div>
+
+  <!-- NOTES -->
+  <div class="stitle">Notes &amp; Special Events</div>
+  <div class="card">
+    <textarea id="today-notes" placeholder="Anything special? (drinking, eating out, stress, period, travel…)"></textarea>
+  </div>
+
+  <button class="save-btn" onclick="saveDay()">Save &amp; Sync</button>
+</div>
+
+<!-- ══════════════════════════════════════════ WEIGHT ══ -->
+<div class="page" id="page-weight">
+  <div class="stitle" style="margin-top:0;">Progress</div>
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-val" id="ws-start">—</div><div class="stat-lbl">Start</div></div>
+    <div class="stat-card hl"><div class="stat-val" id="ws-cur">—</div><div class="stat-lbl">Current</div></div>
+    <div class="stat-card"><div class="stat-val" id="ws-chg">—</div><div class="stat-lbl">Change</div></div>
+  </div>
+  <div class="chart-wrap">
+    <div style="font-size:13px;font-weight:600;margin-bottom:12px;">Weight over time (kg)</div>
+    <canvas id="wt-chart" height="200"></canvas>
+    <div id="no-chart" style="text-align:center;padding:28px;color:var(--ink-soft);font-size:13px;">Log your weight daily to see chart</div>
+  </div>
+  <div class="stitle">History</div>
+  <div class="card" id="wt-history"></div>
+</div>
+
+<!-- ══════════════════════════════════════════ STATS ══ -->
+<div class="page" id="page-stats">
+  <div class="stitle" style="margin-top:0;">30-Day Habit Heatmap</div>
+  <div class="card">
+    <div style="font-size:12px;color:var(--ink-soft);margin-bottom:8px;">Each square = one day. Darker = more habits completed.</div>
+    <div class="heatmap-wrap" id="heatmap"></div>
+  </div>
+
+  <div class="stitle">Per-Habit Completion Rate</div>
+  <div class="card">
+    <div style="font-size:12px;color:var(--ink-soft);margin-bottom:14px;">How consistently you check each habit (last 30 days)</div>
+    <div id="habit-bars"></div>
+  </div>
+
+  <div class="stitle">Daily Achievement Rate (last 14 days)</div>
+  <div class="card">
+    <canvas id="daily-chart" height="180"></canvas>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ ANALYSIS ══ -->
+<div class="page" id="page-analysis">
+  <div style="background:linear-gradient(135deg,var(--teal-pale),var(--sky-pale));border-radius:var(--radius);padding:18px;margin-bottom:18px;border:1.5px solid var(--border);">
+    <div style="font-size:17px;font-weight:700;margin-bottom:5px;">AI Pattern Analysis</div>
+    <div style="font-size:13px;color:var(--ink-mid);line-height:1.6;">Analyzes which habits and behaviors correlate most with your weight loss days.</div>
+  </div>
+  <button class="analyze-btn" onclick="runAnalysis()">✦ Analyze My Data</button>
+  <div id="analysis-out"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- SETUP HELP MODAL -->
+<div id="help-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;overflow-y:auto;padding:20px;">
+  <div style="background:white;max-width:540px;margin:0 auto;border-radius:var(--radius);padding:24px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <strong style="font-size:16px;">How to set up Supabase (free)</strong>
+      <button onclick="document.getElementById('help-modal').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--ink-soft);">✕</button>
+    </div>
+    <ol style="font-size:13px;line-height:2;color:var(--ink-mid);padding-left:18px;">
+      <li>Go to <strong>supabase.com</strong> → New project (free tier)</li>
+      <li>Project created → go to <strong>Settings → API</strong></li>
+      <li>Copy <strong>Project URL</strong> and <strong>anon public key</strong></li>
+      <li>Go to <strong>Table Editor → New Table</strong>: name it <code style="background:#f0f0f0;padding:1px 5px;border-radius:4px;">bodylog</code></li>
+      <li>Add these columns:<br>
+        <code style="background:#f0f0f0;padding:4px 8px;border-radius:4px;display:inline-block;margin-top:4px;font-size:12px;">
+          user_id (text, not null)<br>
+          date (text, not null)<br>
+          data (jsonb)<br>
+          updated_at (timestamptz, default: now())
+        </code>
+      </li>
+      <li>In <strong>Authentication → Policies</strong>: enable RLS and add a policy allowing all operations (for personal use)</li>
+      <li>Paste URL + key here → done! ✓</li>
+    </ol>
+    <div style="margin-top:14px;padding:12px;background:var(--teal-pale);border-radius:var(--radius-sm);font-size:12px;color:var(--teal-dark);">
+      <strong>Tip:</strong> Use the same user ID on all your devices (phone, tablet, computer) to sync data.
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// ──────────────────────────────────── HABITS
+const HABITS = [
+  { id:'water_morning',   label:'Drink water right after waking up',                  sub:'Before coffee — kick-starts metabolism' },
+  { id:'protein_breakfast',label:'Breakfast with protein or whole foods',              sub:'Eggs, tofu, Greek yogurt — sets you up for the day' },
+  { id:'eat_slow',        label:'Eat slowly — at least 20 min per meal',              sub:'Satiety signal takes 20 min. This is the most important one.' },
+  { id:'stop_80',         label:'Stop eating when 80% full',                          sub:'Put the chopsticks down before you feel completely full' },
+  { id:'food_order',      label:'Vegetables → protein → carbs (eating order)',        sub:'Blunts blood sugar spikes, reduces fat storage' },
+  { id:'protein_2meals',  label:'Protein-heavy for 2 meals, 1 free meal',             sub:'Maintain muscle + satiety while staying flexible' },
+  { id:'light_dinner',    label:'Eat lighter at dinner',                              sub:'Front-load calories earlier in the day' },
+  { id:'water_drinking',  label:'Drink lots of water at social/drinking events',      sub:'Alternate alcohol with water — cuts intake, reduces bloating' },
+  { id:'no_phone_sleep',  label:'Reduce phone use 1 hour before bed',                sub:'Better sleep → less hunger hormone next day' },
+];
+
+// ──────────────────────────────────── SUPABASE CONFIG
+let SB_URL = '', SB_KEY = '', USER_ID = '';
+let sbReady = false;
+
+function loadConfig() {
+  SB_URL  = localStorage.getItem('sb_url')  || '';
+  SB_KEY  = localStorage.getItem('sb_key')  || '';
+  USER_ID = localStorage.getItem('sb_uid')  || '';
+  if (SB_URL && SB_KEY && USER_ID) {
+    document.getElementById('setup-banner').style.display = 'none';
+    document.getElementById('sync-status').style.display = 'flex';
+    setSyncStatus('syncing', 'Connecting…');
+    testConnection();
+  }
+}
+
+function saveSupabaseConfig() {
+  SB_URL  = document.getElementById('sb-url').value.trim().replace(/\/$/, '');
+  SB_KEY  = document.getElementById('sb-key').value.trim();
+  USER_ID = document.getElementById('user-id').value.trim().toLowerCase().replace(/\s+/g,'_');
+  if (!SB_URL || !SB_KEY || !USER_ID) { showToast('Please fill all three fields'); return; }
+  localStorage.setItem('sb_url', SB_URL);
+  localStorage.setItem('sb_key', SB_KEY);
+  localStorage.setItem('sb_uid', USER_ID);
+  document.getElementById('setup-banner').style.display = 'none';
+  document.getElementById('sync-status').style.display = 'flex';
+  setSyncStatus('syncing', 'Connecting…');
+  testConnection();
+}
+
+function resetConfig() {
+  if (!confirm('Reset cloud sync settings?')) return;
+  ['sb_url','sb_key','sb_uid'].forEach(k => localStorage.removeItem(k));
+  location.reload();
+}
+
+function setSyncStatus(state, text) {
+  const dot = document.getElementById('sync-dot');
+  dot.className = 'sync-dot ' + state;
+  document.getElementById('sync-text').textContent = text;
+  sbReady = state === 'connected';
+}
+
+async function testConnection() {
+  try {
+    const r = await sbFetch('GET', `?user_id=eq.${USER_ID}&date=eq.TEST&select=date`);
+    setSyncStatus('connected', `Synced as "${USER_ID}"`);
+    // pull today's data from cloud
+    await pullDay(currentDate);
+  } catch(e) {
+    setSyncStatus('error', 'Connection failed — check credentials');
+  }
+}
+
+// ──────────────────────────────────── SUPABASE REST
+async function sbFetch(method, query, body) {
+  const url = `${SB_URL}/rest/v1/bodylog${query}`;
+  const opts = {
+    method,
+    headers: {
+      'apikey': SB_KEY,
+      'Authorization': `Bearer ${SB_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': method === 'POST' ? 'resolution=merge-duplicates,return=minimal' : 'return=minimal'
+    }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(url, opts);
+  if (!r.ok) throw new Error(await r.text());
+  const text = await r.text();
+  return text ? JSON.parse(text) : [];
+}
+
+async function pushDay(dateStr, dayData) {
+  if (!sbReady) return;
+  setSyncStatus('syncing', 'Saving…');
+  try {
+    await sbFetch('POST', '', { user_id: USER_ID, date: dateStr, data: dayData, updated_at: new Date().toISOString() });
+    setSyncStatus('connected', `Saved ✓ — ${USER_ID}`);
+  } catch(e) {
+    setSyncStatus('error', 'Save failed');
+  }
+}
+
+async function pullDay(dateStr) {
+  if (!sbReady && !(SB_URL && SB_KEY)) return;
+  try {
+    const rows = await sbFetch('GET', `?user_id=eq.${USER_ID}&date=eq.${dateStr}&select=data`);
+    if (rows.length > 0 && rows[0].data) {
+      const remote = rows[0].data;
+      setLocalDay(dateStr, remote);
+      loadDayUI(dateStr);
+    }
+  } catch(e) {}
+}
+
+async function pullAllData() {
+  if (!sbReady) return getData();
+  try {
+    const rows = await sbFetch('GET', `?user_id=eq.${USER_ID}&select=date,data&order=date.asc`);
+    const merged = getData();
+    rows.forEach(r => { merged[r.date] = r.data; });
+    saveData(merged);
+    return merged;
+  } catch(e) { return getData(); }
+}
+
+// ──────────────────────────────────── LOCAL STORAGE
+function getData()          { try { return JSON.parse(localStorage.getItem('bodylog')||'{}'); } catch(e){ return {}; } }
+function saveData(d)        { localStorage.setItem('bodylog', JSON.stringify(d)); }
+function getLocalDay(ds)    { return getData()[ds] || emptyDay(); }
+function setLocalDay(ds, v) { const d=getData(); d[ds]=v; saveData(d); }
+function emptyDay()         { return { checks:{}, condition:'', meals:{b:'',l:'',d:'',s:''}, fullness:{b:5,l:5,d:5}, weight:'', notes:'' }; }
+
+// ──────────────────────────────────── DATE
+let currentDate = todayStr();
+function todayStr() { return new Date().toISOString().slice(0,10); }
+function fmtDate(s) {
+  const d = new Date(s+'T00:00:00');
+  return d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+}
+
+function changeDate(delta) {
+  const d = new Date(currentDate+'T00:00:00');
+  d.setDate(d.getDate()+delta);
+  currentDate = d.toISOString().slice(0,10);
+  document.getElementById('display-date').textContent = fmtDate(currentDate);
+  pullDay(currentDate).then(() => loadDayUI(currentDate));
+}
+
+// ──────────────────────────────────── CHECKLIST
+function buildChecklist() {
+  document.getElementById('checklist-wrap').innerHTML = HABITS.map(h => `
+    <div class="check-item" id="ci-${h.id}" onclick="toggleCheck('${h.id}')">
+      <div class="chk-box"></div>
+      <div class="chk-text">
+        <div class="chk-label">${h.label}</div>
+        <div class="chk-sub">${h.sub}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleCheck(id) {
+  const day = getLocalDay(currentDate);
+  day.checks[id] = !day.checks[id];
+  setLocalDay(currentDate, day);
+  document.getElementById('ci-'+id).classList.toggle('checked', !!day.checks[id]);
+  updateRing(day);
+}
+
+function updateRing(day) {
+  const total = HABITS.length, done = HABITS.filter(h=>day.checks[h.id]).length;
+  const pct = Math.round((done/total)*100);
+  const circ = 2*Math.PI*32;
+  document.getElementById('ring-fill').style.strokeDashoffset = circ - (pct/100)*circ;
+  document.getElementById('ring-pct').textContent = pct+'%';
+  document.getElementById('ring-done').textContent = done+'/'+total;
+  const msgs = ['Check off your habits below','Great start! Keep going 💪','Halfway there 🌿','Almost perfect!','Perfect day! ✨'];
+  document.getElementById('prog-msg').textContent = msgs[Math.min(Math.floor(pct/25),4)];
+}
+
+// ──────────────────────────────────── FULLNESS PIPS
+function initPips() {
+  ['b','l','d'].forEach(m => {
+    document.getElementById('pip-'+m).innerHTML = Array.from({length:10},(_,i)=>`<div class="pip" id="pp-${m}-${i+1}"></div>`).join('');
+    updateFull(m, 5);
+  });
+}
+
+const pipColors = ['#e8f5e9','#c8e6c9','#a5d6a7','#81c784','#66bb6a','#4caf50','#26c6da','#2ec4a5','#1a8f78','#085041'];
+
+function updateFull(m, val) {
+  val = parseInt(val);
+  document.getElementById('fv-'+m).textContent = val;
+  for(let i=1;i<=10;i++){
+    const pip = document.getElementById('pp-'+m+'-'+i);
+    if(pip){ pip.style.background = i<=val?pipColors[val-1]:'var(--surface-2)'; pip.style.borderColor = i<=val?'transparent':'var(--border)'; }
+  }
+  const sl = document.getElementById('fs-'+m);
+  if(sl){ const pct=((val-1)/9)*100; sl.style.background=`linear-gradient(to right,var(--teal) ${pct}%,var(--surface-2) ${pct}%)`; }
+}
+
+// ──────────────────────────────────── CONDITION
+function selectCond(btn, val) {
+  document.querySelectorAll('.cond-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+// ──────────────────────────────────── LOAD UI
+function loadDayUI(ds) {
+  const day = getLocalDay(ds);
+  HABITS.forEach(h => document.getElementById('ci-'+h.id)?.classList.toggle('checked', !!day.checks[h.id]));
+  updateRing(day);
+  ['b','l','d','s'].forEach(m => { const el=document.getElementById('meal-'+m); if(el) el.value=day.meals[m]||''; });
+  ['b','l','d'].forEach(m => { const v=day.fullness[m]||5; const sl=document.getElementById('fs-'+m); if(sl) sl.value=v; updateFull(m,v); });
+  document.getElementById('today-wt').value = day.weight||'';
+  document.getElementById('today-notes').value = day.notes||'';
+  document.querySelectorAll('.cond-btn').forEach(b => b.classList.toggle('selected', b.getAttribute('onclick').includes("'"+day.condition+"'")));
+  calcStreak();
+}
+
+// ──────────────────────────────────── SAVE
+async function saveDay() {
+  const day = getLocalDay(currentDate);
+  ['b','l','d','s'].forEach(m => day.meals[m]=document.getElementById('meal-'+m).value);
+  ['b','l','d'].forEach(m => day.fullness[m]=parseInt(document.getElementById('fs-'+m).value));
+  day.weight = document.getElementById('today-wt').value;
+  day.notes  = document.getElementById('today-notes').value;
+  const sel  = document.querySelector('.cond-btn.selected');
+  day.condition = sel ? sel.getAttribute('onclick').match(/'([^']+)'/)[1] : '';
+  setLocalDay(currentDate, day);
+  showToast('Saving…');
+  await pushDay(currentDate, day);
+  showToast('Saved ✓');
+}
+
+// ──────────────────────────────────── STREAK
+function calcStreak() {
+  const data = getData(); let streak = 0;
+  const d = new Date();
+  for(let i=0;i<60;i++){
+    const s = d.toISOString().slice(0,10);
+    const day = data[s];
+    if(day && HABITS.filter(h=>day.checks[h.id]).length >= Math.ceil(HABITS.length*0.5)) streak++;
+    else if(i>0) break;
+    d.setDate(d.getDate()-1);
+  }
+  document.getElementById('streak-num').textContent = streak;
+}
+
+// ──────────────────────────────────── TOAST
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+// ──────────────────────────────────── NAV
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(name==='weight') loadWeightPage();
+  if(name==='stats')  loadStatsPage();
+  if(name==='analysis') document.getElementById('analysis-out').innerHTML='';
+}
+
+// ──────────────────────────────────── WEIGHT PAGE
+let wtChart = null;
+async function loadWeightPage() {
+  const data = await pullAllData();
+  const entries = Object.entries(data).filter(([,v])=>v&&v.weight).sort(([a],[b])=>a.localeCompare(b)).map(([date,v])=>({date,w:parseFloat(v.weight)}));
+  if(!entries.length) {
+    document.getElementById('ws-start').textContent='—';
+    document.getElementById('ws-cur').textContent='—';
+    document.getElementById('ws-chg').textContent='—';
+    document.getElementById('no-chart').style.display='block';
+    document.getElementById('wt-history').innerHTML='<div style="font-size:13px;color:var(--ink-soft);text-align:center;padding:18px;">No weight logged yet</div>';
+    return;
+  }
+  document.getElementById('no-chart').style.display='none';
+  const first=entries[0].w, last=entries[entries.length-1].w, chg=(last-first).toFixed(1);
+  document.getElementById('ws-start').textContent=first.toFixed(1)+'kg';
+  document.getElementById('ws-cur').textContent=last.toFixed(1)+'kg';
+  const ce=document.getElementById('ws-chg'); ce.textContent=(chg>0?'+':'')+chg+'kg'; ce.style.color=chg<=0?'var(--teal-dark)':'#c0392b';
+  const ctx=document.getElementById('wt-chart').getContext('2d');
+  if(wtChart) wtChart.destroy();
+  wtChart = new Chart(ctx,{type:'line',data:{labels:entries.map(e=>e.date.slice(5)),datasets:[{data:entries.map(e=>e.w),borderColor:'#2ec4a5',backgroundColor:'rgba(46,196,165,.08)',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#2ec4a5',tension:.35,fill:true}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{ticks:{font:{family:'DM Mono',size:11}},grid:{color:'rgba(0,0,0,.05)'}},x:{ticks:{font:{family:'DM Mono',size:10},maxRotation:0},grid:{display:false}}}}});
+  document.getElementById('wt-history').innerHTML=[...entries].reverse().slice(0,20).map((e,i,arr)=>{
+    const prev=arr[i+1]; const delta=prev?(e.w-prev.w).toFixed(1):null;
+    return `<div class="w-row"><span class="w-date">${e.date}</span><span class="w-val">${e.w.toFixed(1)} kg</span>${delta?`<span class="w-delta ${delta<=0?'dn':'up'}">${delta>0?'+':''}${delta}</span>`:''}</div>`;
+  }).join('');
+}
+
+// ──────────────────────────────────── STATS PAGE
+let dailyChart = null;
+async function loadStatsPage() {
+  const data = await pullAllData();
+  const dates30 = [];
+  for(let i=29;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); dates30.push(d.toISOString().slice(0,10)); }
+
+  // heatmap
+  const hm = document.getElementById('heatmap');
+  hm.innerHTML = dates30.map(s=>{
+    const day=data[s]; const done=day?HABITS.filter(h=>day.checks[h.id]).length:0;
+    const pct=done/HABITS.length;
+    const cls=pct===0?'':pct<0.4?'h1':pct<0.7?'h2':'h3';
+    const dd=parseInt(s.slice(8));
+    return `<div class="hm-cell ${cls}" title="${s}: ${done}/${HABITS.length} habits">${dd}</div>`;
+  }).join('');
+
+  // per-habit bars
+  const bars = document.getElementById('habit-bars');
+  bars.innerHTML = HABITS.map(h=>{
+    const logged = dates30.filter(s=>data[s]);
+    const done = logged.filter(s=>data[s].checks&&data[s].checks[h.id]).length;
+    const total = logged.length || 1;
+    const pct = Math.round((done/total)*100);
+    return `<div class="habit-bar-row">
+      <div class="habit-bar-name">${h.label}</div>
+      <div class="habit-bar-track"><div class="habit-bar-fill" style="width:${pct}%"></div></div>
+      <div class="habit-bar-pct">${pct}%</div>
+    </div>`;
+  }).join('');
+
+  // daily achievement line chart (last 14)
+  const dates14 = dates30.slice(-14);
+  const dailyPcts = dates14.map(s=>{ const day=data[s]; if(!day) return 0; const done=HABITS.filter(h=>day.checks[h.id]).length; return Math.round((done/HABITS.length)*100); });
+  const ctx2 = document.getElementById('daily-chart').getContext('2d');
+  if(dailyChart) dailyChart.destroy();
+  dailyChart = new Chart(ctx2,{type:'bar',data:{labels:dates14.map(s=>s.slice(5)),datasets:[{data:dailyPcts,backgroundColor:dailyPcts.map(p=>p>=70?'rgba(46,196,165,.7)':p>=40?'rgba(244,208,63,.7)':'rgba(200,200,200,.5)'),borderRadius:6,borderSkipped:false}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%',font:{family:'DM Mono',size:11}},grid:{color:'rgba(0,0,0,.05)'}},x:{ticks:{font:{family:'DM Mono',size:10}},grid:{display:false}}}}});
+}
+
+// ──────────────────────────────────── ANALYSIS
+async function runAnalysis() {
+  const out = document.getElementById('analysis-out');
+  out.innerHTML = '<div class="dots"><span></span><span></span><span></span></div>';
+  const data = await pullAllData();
+  const entries = Object.entries(data).sort(([a],[b])=>a.localeCompare(b));
+  setTimeout(()=>{ // slight delay for UX
+    if(entries.length < 3){ out.innerHTML=`<div class="no-data"><div class="nd-icon">📊</div><div class="nd-text">Need at least 3 days of data.<br>Keep logging and check back!</div></div>`; return; }
+    const weightEntries = entries.filter(([,v])=>v&&v.weight).map(([date,v])=>({date,w:parseFloat(v.weight)}));
+    const insights = [];
+
+    // Best correlated habit
+    if(weightEntries.length >= 2){
+      const scores = {};
+      HABITS.forEach(h=>{
+        let good=0,total=0;
+        for(let i=1;i<weightEntries.length;i++){
+          const prev=data[weightEntries[i-1].date];
+          if(!prev) continue;
+          const delta=weightEntries[i].w-weightEntries[i-1].w;
+          if(prev.checks&&prev.checks[h.id]){ if(delta<0) good++; total++; }
+        }
+        scores[h.id]=total>0?good/total:-1;
+      });
+      const best=Object.entries(scores).filter(([,v])=>v>=0).sort(([,a],[,b])=>b-a)[0];
+      if(best){
+        const name=HABITS.find(h=>h.id===best[0])?.label||best[0];
+        insights.push({icon:'🌿',bg:'var(--teal-pale)',title:'Your Most Effective Habit',body:`When you do <strong>${name}</strong>, you lose weight on <span class="im">${Math.round(best[1]*100)}%</span> of following days — your highest-correlation habit.`});
+      }
+    }
+
+    // Habit completion overview
+    const loggedDays = entries.filter(([,v])=>v);
+    const avgCompletion = loggedDays.length ? Math.round(loggedDays.reduce((sum,[,v])=>sum+HABITS.filter(h=>v.checks&&v.checks[h.id]).length,0)/loggedDays.length/HABITS.length*100) : 0;
+    insights.push({icon:'✅',bg:'var(--lime-pale)',title:'Overall Consistency',body:`Across <span class="im">${loggedDays.length}</span> logged days, your average daily habit completion is <span class="im">${avgCompletion}%</span>. ${avgCompletion>=70?'Excellent — keep this up!':avgCompletion>=50?'Good foundation. Target 70%+ for best results.':'Focus on the 3–4 habits that feel easiest first.'}`});
+
+    // Fullness
+    let overDays=0;
+    loggedDays.forEach(([,v])=>{ if(!v.fullness) return; const avg=((v.fullness.b||5)+(v.fullness.l||5)+(v.fullness.d||5))/3; if(avg>7.5) overDays++; });
+    insights.push({icon:'🍽️',bg:'var(--yellow-pale)',title:'Fullness Patterns',body:`You logged fullness above 7.5 average on <span class="im">${overDays}/${loggedDays.length}</span> days. Aim for the <span class="im">5–7</span> range — enough to feel satisfied without overeating.`});
+
+    // Dinner timing
+    let earlyD=0,lateD=0;
+    loggedDays.forEach(([,v])=>{ const t=v.meals?.d; if(t){ const h=parseInt(t.split(':')[0]); if(h<19)earlyD++; else lateD++; }});
+    if(earlyD+lateD>0) insights.push({icon:'🕖',bg:'var(--sky-pale)',title:'Dinner Timing',body:`Early dinners (before 7pm): <span class="im">${earlyD}</span> days. Late dinners: <span class="im">${lateD}</span> days. ${earlyD>lateD?'Early dinners are a reliable weight-loss signal — great habit!':'Shifting dinner earlier even by 30 min can make a measurable difference.'}`});
+
+    // Sleep habit
+    const sleepDays = loggedDays.filter(([,v])=>v.checks&&v.checks.no_phone_sleep).length;
+    if(sleepDays>0) insights.push({icon:'😴',bg:'var(--sky-pale)',title:'Pre-Sleep Routine',body:`You reduced phone use before bed on <span class="im">${sleepDays}</span> days. Better sleep quality directly lowers ghrelin (hunger hormone) the next morning.`});
+
+    // Weight rate
+    if(weightEntries.length>=2){
+      const totalChg=weightEntries[weightEntries.length-1].w-weightEntries[0].w;
+      const rate=(totalChg/weightEntries.length*7).toFixed(2);
+      insights.push({icon:'📉',bg:'var(--teal-pale)',title:'Weight Loss Rate',body:`Over <span class="im">${weightEntries.length}</span> weigh-in days: <span class="im">${totalChg>0?'+':''}${totalChg.toFixed(1)}kg</span> total, ~<span class="im">${rate}kg/week</span>. Healthy range is −0.3 to −0.7kg/week for sustainable fat loss.`});
+    }
+
+    out.innerHTML = insights.map(ins=>`<div class="insight-card"><div class="insight-hdr"><div class="insight-icon" style="background:${ins.bg}">${ins.icon}</div><div class="insight-title">${ins.title}</div></div><div class="insight-body">${ins.body}</div></div>`).join('');
+  }, 800);
+}
+
+function showSetupHelp() { document.getElementById('help-modal').style.display='block'; }
+
+// ──────────────────────────────────── INIT
+function init() {
+  document.getElementById('display-date').textContent = fmtDate(currentDate);
+  buildChecklist();
+  initPips();
+  loadDayUI(currentDate);
+  loadConfig();
+}
+init();
+</script>
+<script>
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
+</script>
+</body>
+</html>
